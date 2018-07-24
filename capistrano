@@ -1,0 +1,87 @@
+sudo locale-gen ru_RU.UTF-8
+sudo nano /etc/environment
+LANGUAGE=en_US.UTF-8
+LANG=en_US.UTF-8
+LC_ALL=ru_RU.UTF-8
+LC_COLLATE=ru_RU.UTF-8
+LC_TIME=en_US.UTF-8
+-----------------------------------
+timedatectl
+sudo dpkg-reconfigure tzdata
+Europe
+ Kiev
+-------------------------------------------------------------
+sudo nano /etc/postgresql/9.5/main/pg_hba.conf
+sudo su - postgres
+psql
+\dg
+create user colorado with password '197855';
+\l
+create database "colorado_prod" with owner = colorado;
+psql -h localhost -U colorado -W colorado_prod
+database.yml
+production:
+  <<: *default
+  database: postgresql
+  host: localhost
+  port: 5432
+  database: colorado_prod
+  username: colorado
+  password: 197855
+config/environments/production.rb
+  config.action_mailer.delivery_method = :sendmail
+  config.action_mailer.perform_deliveries = true
+  config.action_mailer.default_url_option = { host: '37.139.11.234'}
+config/initilizers/devise.rb
+config.mailer_sender = 'konstantin.faleev@gmail.com'
+---------------------------------------------------------------------------------------------------------------------------
+group :development do
+  gem 'capistrano', '~> 3.8'
+  gem 'capistrano-rails', '~> 1.2'
+  gem 'capistrano-passenger', '~> 0.2'
+  gem 'capistrano-rbenv', '~> 2.1'
+  gem 'capistrano-bundler', '~> 1.2'
+bundle
+cap install STAGE=production
+Capfile
+require 'capistrano/rails'
+require 'capistrano/passenger'
+require 'capistrano/rbenv'
+require 'capistrano/bundler'
+set :rbenv_type, :user
+set :rbenv_ruby, '2.4.2' # версия руби на вашем сервере, а не локальная
+------------------------------------
+config/deploy.rb
+set :application, 'railsstore'
+set :repo_url, 'https://github.com/KonstantinFaleev/geekhub_mystore_v2.git'
+set :deploy_to, '/home/deploy/apps/railsstore'
+append :linked_files, 'config/database.yml', 'config/secrets.yml'
+append :linked_dirs, 'log', 'tmp/pids', 'tmp/cache', 'tmp/sockets', 'vendor/bundle',
+'public/system', 'public/uploads'
+config/deploy/production.rb
+server '37.139.11.234', user: 'deploy', roles: %w{app db web}
+------------------------------------------------------------------------------
+sudo rm /etc/nginx/sites-enabled/demoapp.conf
+sudo rm /etc/nginx/sites-available/default
+sudo rm /etc/nginx/sites-available/demoapp.conf
+sudo nano /etc/nginx/sites-available/railsstore.conf
+server{
+   listen 80;
+  listen [::]:80 ipv6only=on;
+
+  server_name 37.139.11.234;
+  accer_log  /var/log/nginx/railsstore.access.log;
+  error_log  /var/log/nginx/railsstore.error.log;
+
+  passenger_enabled on;
+  rails_env production;
+  root /home/deploy/apps/colorado/current/public;
+}
+sudo ln -s /etc/nginx/sites-available/railsstore.conf  /etc/nginx/sites-enabled/railsstore.conf
+sudo service nginx restart
+-----------------------------------
+exit
+cap production doctor
+
+
+
