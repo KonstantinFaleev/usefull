@@ -1,0 +1,132 @@
+1. VPS
+2.Linux users
+3.rbenv ruby
+4.nginx + passenger
+5.postgres
+6.Deploy!
+-------------------------
+ssh-keygen
+ls ~/.ssh/
+cat ~/.ssh/id_rsa.pub
+-----------------------------
+ssh root@95.85.21.190
+ls ~/.ssh/authorized_keys
+cat ~/.ssh/authorized_keys
+-------------------------------------
+dpkg-reconfigure locales
+ru_RU.UTF-8 UTF-8
+ru_RU.UTF-8 UTF-8
+-------------------------------
+adduser deploy
+adduser deploy sudo
+
+Log in as root
+Edit ssh config:
+sudo nano /etc/ssh/sshd_config
+Change this line:
+PasswordAuthentication no
+to
+PasswordAuthentication yes
+Restart daemon:
+sudo systemctl restart sshd
+ssh-copy-id deploy@95.85.21.190  на лок.машине
+ssh 'deploy@95.85.21.190'
+-----------------------------------------------------------------
+sudo apt-get update
+sudo apt-get install autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm3 libgdbm-dev
+git clone https://github.com/rbenv/rbenv.git ~/.rbenv
+echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
+echo 'eval "$(rbenv init -)"' >> ~/.bashrc
+source ~/.bashrc
+type rbenv
+git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
+rbenv install 2.4.2
+rbenv global 2.4.2
+ruby -v
+which ruby
+echo 'gem: --no-document' >> ~/.gemrc
+gem install bundler
+bundler -v
+---------------------------------------------------------------------------
+sudo apt-get install -y dirmngr gnupg
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 561F9B9CAC40B2F7
+sudo apt-get install -y apt-transport-https ca-certificates
+sudo sh -c 'echo deb https://oss-binaries.phusionpassenger.com/apt/passenger xenial main > /etc/apt/sources.list.d/passenger.list'
+sudo apt-get update
+sudo apt-get install -y nginx-extras passenger
+sudo service nginx start
+sudo vi /etc/nginx/nginx.conf
+# include /etc/nginx/passenger.conf     убрать #
+sudo vi /etc/nginx/passenger.conf
+passenger_ruby /home/deploy/.rbenv/shims/ruby;         заменить
+sudo service nginx restart
+----------------------------------------------------------------
+sudo vi /etc/nginx/sites-available/myapp
+server{
+  listen 80 default_server;
+  listen [::]:80  default_server ipv6only=on;
+
+  server_name mydomain.com
+  accer_log  /var/log/nginx/myapp.access.log;
+  error_log  /var/log/nginx/myapp.error.log;
+
+  passenger_enabled on;
+  rails_env production;
+  root /home/deploy/www/public;
+}
+---------------------------------------
+mkdir -p www/public
+echo 'Hello, World!' > www/public/index.html
+sudo ln -s /etc/nginx/sites-available/myapp /etc/nginx/sites-enabled/myapp
+sudo rm /etc/nginx/sites-enabled/default
+sudo service nginx restart
+sudo service nginx stop
+------------------------------------------
+sudo apt-get update
+sudo apt-get install postgresql postgresql-contrib
+sudo vi /etc/postgresql/9.5/main/pg_hba.conf
+sudo su - postgres
+psql
+CREATE USER deploy WITH PASSWORD '197855';
+CREATE DATABASE "myapp" WITH OWNER = deploy;
+\q
+exit
+psql --user deploy --password myapp    войти в консоль базы
+------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------
+ssh-keygen -t rsa
+cat ~/.ssh/id_rsa.pub
+git Deploy keys
+ls
+rm -rf www/
+git clone https://github.com/KonstantinFaleev/geekhub_mystore_v2.git www
+sudo apt-get install nodejs sqlite3 libsqlite3-dev libpq-dev
+bundle install --without test development
+sudo apt-get install imagemagick libmagickcore-dev libmagickwand-dev
+bundle install --without test development
+vi config/database.yml
+production:
+  adapter: postgresql
+  user: deploy
+  password: 197855
+  database: myapp
+rake secret
+vi config/secrets.yml
+production:
+  secret_key_base: 5c71d046b9b604e50b6d3cfdf2
+bundle exec rake db:migrate RAILS_ENV=production
+bundle exec rake assets:precompile RAILS_ENV=production
+sudo service nginx start
+git pull
+tuch tmp/restart.txt
+sudo tail -f /var/log/nginx/myapp.access.log
+/var/log/nginx/myapp.access.log
+sudo tail -f /var/log/nginx/myapp.error.log
+
+
+
+
+
+
+
+
